@@ -258,7 +258,7 @@ namespace Mod::Util::Make_Item
 		AddAttr(player, args[1], args[2]);
 	}
 
-	void Give_Common(CTFPlayer *player, CTFPlayer *recipient, const char *cmd_name, const CSteamID *steamid, bool no_remove, int slot = -1)
+	void Give_Common(CTFPlayer *player, CTFPlayer *recipient, const char *cmd_name, const CSteamID *steamid, bool no_remove)
 	{
 		// possible ways to use this command:
 		// - 0 args: give to me
@@ -271,22 +271,14 @@ namespace Mod::Util::Make_Item
 		}
 		
 		CEconItemView *item_view = (*it).second;
-		if(slot == -1){
-			slot = item_view->GetStaticData()->GetLoadoutSlot(recipient->GetPlayerClass()->GetClassIndex());
+		
+		int slot = item_view->GetStaticData()->GetLoadoutSlot(recipient->GetPlayerClass()->GetClassIndex());
+		if (slot == -1) {
+			slot = item_view->GetStaticData()->GetLoadoutSlot(TF_CLASS_UNDEFINED);
 			if (slot == -1) {
-				slot = item_view->GetStaticData()->GetLoadoutSlot(TF_CLASS_UNDEFINED);
-				if (slot == -1) {
-					ClientMsg(player, "[%s] WARNING: failed to determine this item's loadout slot for the current player class; weird things may occur.\n", cmd_name);
-				} else {
-					ClientMsg(player, "[%s] WARNING: using best-guess loadout slot #%d (\"%s\"). Not guaranteed to work perfectly for this class.\n", cmd_name, slot, GetLoadoutSlotName(slot));
-				}
-			}
-		} else {
-			if(IsValidLoadoutSlotNumber(slot))
-				ClientMsg(player, "[%s] Using loadout slot #%d (\"%s\").\n", cmd_name, slot, GetLoadoutSlotName(slot));
-			else {
-				ClientMsg(player, "[%s] Error: Invalid loadout slot #%d.\n", cmd_name, slot);
-				return;
+				ClientMsg(player, "[%s] WARNING: failed to determine this item's loadout slot for the current player class; weird things may occur.\n", cmd_name);
+			} else {
+				ClientMsg(player, "[%s] WARNING: using best-guess loadout slot #%d (\"%s\"). Not guaranteed to work perfectly for this class.\n", cmd_name, slot, GetLoadoutSlotName(slot));
 			}
 		}
 		
@@ -393,7 +385,7 @@ namespace Mod::Util::Make_Item
 		
 	}
 	
-		void Give_Common_Silent(CTFPlayer *player, CTFPlayer *recipient, const char *cmd_name, const CSteamID *steamid, bool no_remove, int slot = -1)
+		void Give_Common_Silent(CTFPlayer *player, CTFPlayer *recipient, const char *cmd_name, const CSteamID *steamid, bool no_remove)
 	{
 		// possible ways to use this command:
 		// - 0 args: give to me
@@ -407,18 +399,15 @@ namespace Mod::Util::Make_Item
 		
 		CEconItemView *item_view = (*it).second;
 		
-		if(slot == -1){
-			slot = item_view->GetStaticData()->GetLoadoutSlot(recipient->GetPlayerClass()->GetClassIndex());
+		int slot = item_view->GetStaticData()->GetLoadoutSlot(recipient->GetPlayerClass()->GetClassIndex());
+		if (slot == -1) {
+			slot = item_view->GetStaticData()->GetLoadoutSlot(TF_CLASS_UNDEFINED);
 			if (slot == -1) {
-				slot = item_view->GetStaticData()->GetLoadoutSlot(TF_CLASS_UNDEFINED);
-				if (slot == -1) {
-					ClientMsg(player, "[%s] WARNING: failed to determine this item's loadout slot for the current player class; weird things may occur.\n", cmd_name);
-				} else {
-					ClientMsg(player, "[%s] WARNING: using best-guess loadout slot #%d (\"%s\"). Not guaranteed to work perfectly for this class.\n", cmd_name, slot, GetLoadoutSlotName(slot));
-				}
+				//ClientMsg(player, "[%s] WARNING: failed to determine this item's loadout slot for the current player class; weird things may occur.\n", cmd_name);
+			} else {
+				//ClientMsg(player, "[%s] WARNING: using best-guess loadout slot #%d (\"%s\"). Not guaranteed to work perfectly for this class.\n", cmd_name, slot, GetLoadoutSlotName(slot));
 			}
-		} else if (!IsValidLoadoutSlotNumber(slot))
-			return;
+		}
 		
 		if (!no_remove) {
 			if (IsLoadoutSlot_Cosmetic(static_cast<loadout_positions_t>(slot))) {
@@ -573,7 +562,7 @@ namespace Mod::Util::Make_Item
 		CC_Give_Common(player, args, "sig_makeitem_give_noremove", steamid, true);
 	}
 
-	void Give_OneLine(CTFPlayer *player, const CCommand& args, const char *cmd_name, const CSteamID *steamid, bool noremove, int slot = -1)
+	void Give_OneLine(CTFPlayer *player, const CCommand& args, const char *cmd_name, const CSteamID *steamid, bool noremove)
 	{
 		state.erase(*steamid);
 
@@ -603,12 +592,12 @@ namespace Mod::Util::Make_Item
 		}
 		
 		for(CBasePlayer *target : vec) {
-			Give_Common(player, ToTFPlayer(target), "sig_makeitem", steamid, noremove, slot);
+			Give_Common(player, ToTFPlayer(target), "sig_makeitem", steamid, noremove);
 		}
 		state.erase(*steamid);
 	}
 	
-	void Give_OneLine_Silent(CTFPlayer *player, const CCommand& args, const char *cmd_name, const CSteamID *steamid, bool noremove, int slot = -1)
+	void Give_OneLine_Silent(CTFPlayer *player, const CCommand& args, const char *cmd_name, const CSteamID *steamid, bool noremove)
 	{
 		state.erase(*steamid);
 
@@ -638,7 +627,7 @@ namespace Mod::Util::Make_Item
 		}
 		
 		for(CBasePlayer *target : vec) {
-			Give_Common_Silent(player, ToTFPlayer(target), "sig_makeitem", steamid, noremove, slot);
+			Give_Common_Silent(player, ToTFPlayer(target), "sig_makeitem", steamid, noremove);
 		}
 		state.erase(*steamid);
 	}
