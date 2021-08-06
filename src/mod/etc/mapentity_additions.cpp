@@ -13,9 +13,12 @@
 
 
 namespace Mod::Util::Make_Item
-{
+{   
+    const CSteamID *GetCommandClientSteamID(const char *func, CTFPlayer *player);
     void CC_Give_OneLine(CTFPlayer *player, const CCommand& args);
     void CC_Give_OneLine_Silent(CTFPlayer *player, const CCommand& args);
+    void Give_OneLine(CTFPlayer *player, const CCommand& args, const char *cmd_name, const CSteamID *steamid, bool noremove, int slot = -1);
+    void Give_OneLine_Silent(CTFPlayer *player, const CCommand& args, const char *cmd_name, const CSteamID *steamid, bool noremove, int slot = -1);
 }
 
 namespace Mod::Etc::Mapentity_Additions
@@ -424,7 +427,7 @@ namespace Mod::Etc::Mapentity_Additions
                         }
                     }
                     return true;
-                }
+                } // easy copy paste!
                 else if (stricmp(szInputName, "$ForceGiveWeapon") == 0) {
                     CTFPlayer *player = ToTFPlayer(ent);
                     CCommand haha;
@@ -443,6 +446,70 @@ namespace Mod::Etc::Mapentity_Additions
                     strcat(funny, attributes); // index attr value attr value attr value etc.
                     haha.Tokenize(funny);
                     Mod::Util::Make_Item::CC_Give_OneLine(player, haha);
+                    return true;
+                }
+                else if (stricmp(szInputName, "$ForceGiveWeaponSlot") == 0) {
+                    CTFPlayer *player = ToTFPlayer(ent);
+                    CCommand haha;
+                    char funny[2048] = "";
+                    char attributes[2048] = "";
+                    strcpy(attributes, Value.String());
+                    //Msg("Before attr: %s", attributes);
+                    char strslot[3] = "";
+                    if(attributes[0] == '1'){
+                        strslot[0] = '1';
+                        strslot[1] = attributes[1];
+                        strslot[2] = '\0';
+                    } else {
+                        strslot[0] = attributes[0];
+                        strslot[1] = '\0';
+                    }
+                    int slot = atoi(strslot);
+                    for(int i = 0; i < 2048; i++){
+                        if(attributes[i] == '\0')
+                            break;
+                        if(attributes[i] == '|')
+                            attributes[i] = '\"';
+                    }
+                    //Msg("After attr: %s", attributes);
+                    strcat(funny, "sig_makeitem @me ");
+                    strcat(funny, attributes); // index attr value attr value attr value etc.
+                    haha.Tokenize(funny);
+                    const CSteamID *steamid = Mod::Util::Make_Item::GetCommandClientSteamID("CC_Give_OneLine", player);
+		            if (steamid == nullptr) return true;
+                    Mod::Util::Make_Item::Give_OneLine_Silent(player, haha, "sig_makeitem", steamid, false, slot);
+                    return true;
+                }
+                else if (stricmp(szInputName, "$ForceGiveWeaponSlotSilent") == 0) {
+                    CTFPlayer *player = ToTFPlayer(ent);
+                    CCommand haha;
+                    char funny[2048] = "";
+                    char attributes[2048] = "";
+                    strcpy(attributes, Value.String());
+                    //Msg("Before attr: %s", attributes);
+                    char strslot[3] = "";
+                    if(attributes[0] == '1'){
+                        strslot[0] = '1';
+                        strslot[1] = attributes[1];
+                        strslot[2] = '\0';
+                    } else {
+                        strslot[0] = attributes[0];
+                        strslot[1] = '\0';
+                    }
+                    int slot = atoi(strslot);
+                    for(int i = 0; i < 2048; i++){
+                        if(attributes[i] == '\0')
+                            break;
+                        if(attributes[i] == '|')
+                            attributes[i] = '\"';
+                    }
+                    //Msg("After attr: %s", attributes);
+                    strcat(funny, "sig_makeitem @me ");
+                    strcat(funny, attributes); // index attr value attr value attr value etc.
+                    haha.Tokenize(funny);
+                    const CSteamID *steamid = Mod::Util::Make_Item::GetCommandClientSteamID("CC_Give_OneLine", player);
+		            if (steamid == nullptr) return true;
+                    Mod::Util::Make_Item::Give_OneLine_Silent(player, haha, "sig_makeitem", steamid, false, slot);
                     return true;
                 }
                 else if (stricmp(szInputName, "$ForceGiveWeaponSilent") == 0) {
