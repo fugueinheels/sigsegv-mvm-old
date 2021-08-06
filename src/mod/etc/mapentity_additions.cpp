@@ -9,7 +9,14 @@
 #include "stub/objects.h"
 #include "util/scope.h"
 #include "util/misc.h"
+#include "sdk2013/convar.h"
 
+
+namespace Mod::Util::Make_Item
+{
+    void CC_Give_OneLine(CTFPlayer *player, const CCommand& args);
+    void CC_Give_OneLine_Silent(CTFPlayer *player, const CCommand& args);
+}
 
 namespace Mod::Etc::Mapentity_Additions
 {
@@ -416,6 +423,46 @@ namespace Mod::Etc::Mapentity_Additions
 
                         }
                     }
+                    return true;
+                }
+                else if (stricmp(szInputName, "$ForceGiveWeapon") == 0) {
+                    CTFPlayer *player = ToTFPlayer(ent);
+                    CCommand haha;
+                    char funny[2048] = "";
+                    char attributes[2048] = "";
+                    strcpy(attributes, Value.String());
+                    //Msg("Before attr: %s", attributes);
+                    for(int i = 0; i < 2048; i++){
+                        if(attributes[i] == '\0')
+                            break;
+                        if(attributes[i] == '|')
+                            attributes[i] = '\"';
+                    }
+                    //Msg("After attr: %s", attributes);
+                    strcat(funny, "sig_makeitem @me ");
+                    strcat(funny, attributes); // index attr value attr value attr value etc.
+                    haha.Tokenize(funny);
+                    Mod::Util::Make_Item::CC_Give_OneLine(player, haha);
+                    return true;
+                }
+                else if (stricmp(szInputName, "$ForceGiveWeaponSilent") == 0) {
+                    CTFPlayer *player = ToTFPlayer(ent);
+                    CCommand haha;
+                    char funny[2048] = "";
+                    char attributes[2048] = "";
+                    strcpy(attributes, Value.String());
+                    //Msg("Before attr: %s", attributes);
+                    for(int i = 0; i < 2048; i++){
+                        if(attributes[i] == '\0')
+                            break;
+                        if(attributes[i] == '|')
+                            attributes[i] = '\"';
+                    }
+                    //Msg("After attr: %s", attributes);
+                    strcat(funny, "sig_makeitem @me ");
+                    strcat(funny, attributes); // index attr value attr value attr value etc.
+                    haha.Tokenize(funny);
+                    Mod::Util::Make_Item::CC_Give_OneLine_Silent(player, haha);
                     return true;
                 }
                 else if (stricmp(szInputName, "$PlaySoundToSelf") == 0) {

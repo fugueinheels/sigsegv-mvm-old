@@ -136,6 +136,39 @@ namespace Mod::Util::Make_Item
 		ClientMsg(player, "\n[sig_makeitem_start] Started making item \"%s\".\n\n", item_def->GetName());
 	}
 	
+	void Start_Silent(CTFPlayer *player, const char *name, const CSteamID *steamid)
+	{
+		auto it = state.find(*steamid);
+		if (it != state.end()) {
+			CEconItemView *item_view = (*it).second;
+			if (item_view != nullptr) {
+				//ClientMsg(player, "[sig_makeitem_start] Warning: discarding information for unfinished item \"%s\".\n", item_view->GetStaticData()->GetName());
+			}
+			
+			state.erase(it);
+		}
+		
+		/* attempt lookup first by item name, then by item definition index */
+		auto item_def = rtti_cast<CTFItemDefinition *>(GetItemSchema()->GetItemDefinitionByName(name));
+		if (item_def == nullptr) {
+			int idx = -1;
+			if (StringToIntStrict(name, idx)) {
+				item_def = FilterOutDefaultItemDef(rtti_cast<CTFItemDefinition *>(GetItemSchema()->GetItemDefinition(idx)));
+			}
+		}
+		
+		if (item_def == nullptr) {
+			//ClientMsg(player, "[sig_makeitem_start] Error: couldn't find any items in the item schema matching \"%s\".\n", name);
+			return;
+		}
+		
+		/* insert new element into the map */
+		CEconItemView *item_view = state[*steamid];
+		item_view->Init(item_def->m_iItemDefIndex, item_def->m_iItemQuality, 9999, 0);
+		
+		//ClientMsg(player, "\n[sig_makeitem_start] Started making item \"%s\".\n\n", item_def->GetName());
+	}
+	
 	void CC_Start(CTFPlayer *player, const CCommand& args)
 	{
 		const CSteamID *steamid = GetCommandClientSteamID("CC_Start", player);
@@ -179,6 +212,38 @@ namespace Mod::Util::Make_Item
 		item_view->GetAttributeList().AddStringAttribute(attr_def, value);
 
 		ClientMsg(player, "[sig_makeitem_add_attr] Added attribute \"%s\" with value \"%s\".\n", attr_def->GetName(), value);
+	}
+	
+	void AddAttr_Silent(CTFPlayer *player, const char *name, const char *value)
+	{
+		const CSteamID *steamid = GetCommandClientSteamID("CC_AddAttr", player);
+		if (steamid == nullptr) return;
+		
+		
+		auto it = state.find(*steamid);
+		if (it == state.end()) {
+			//ClientMsg(player, "[sig_makeitem_add_attr] Error: you need to do sig_makeitem_start before you can do sig_makeitem_add_attr.\n");
+			return;
+		}
+		
+		CEconItemView *item_view = (*it).second;
+		
+		/* attempt lookup first by attr name, then by attr definition index */
+		CEconItemAttributeDefinition *attr_def = GetItemSchema()->GetAttributeDefinitionByName(name);
+		if (attr_def == nullptr) {
+			int idx = -1;
+			if (StringToIntStrict(name, idx)) {
+				attr_def = GetItemSchema()->GetAttributeDefinition(idx);
+			}
+		}
+		
+		if (attr_def == nullptr) {
+			//ClientMsg(player, "[sig_makeitem_add_attr] Error: couldn't find any attributes in the item schema matching \"%s\".\n", name);
+			return;
+		}
+		item_view->GetAttributeList().AddStringAttribute(attr_def, value);
+
+		//ClientMsg(player, "[sig_makeitem_add_attr] Added attribute \"%s\" with value \"%s\".\n", attr_def->GetName(), value);
 	}
 	
 	void CC_AddAttr(CTFPlayer *player, const CCommand& args)
@@ -320,6 +385,134 @@ namespace Mod::Util::Make_Item
 		
 	}
 	
+		void Give_Common_Silent(CTFPlayer *player, CTFPlayer *recipient, const char *cmd_name, const CSteamID *steamid, bool no_remove)
+	{
+		// possible ways to use this command:
+		// - 0 args: give to me
+		// - 1 args: give to steam ID, or user ID, or player name exact match, or player name unique-partial-match
+		
+		auto it = state.find(*steamid);
+		if (it == state.end()) {
+			//ClientMsg(player, "[%s] Error: you need to do sig_makeitem_start before you can do %s.\n", cmd_name, cmd_name);
+			return;
+		}
+		
+		CEconItemView *item_view = (*it).second;
+		
+		int slot = item_view->GetStaticData()->GetLoadoutSlot(recipient->GetPlayerClass()->GetClassIndex());
+		if (slot == -1) {
+			slot = item_view->GetStaticData()->GetLoadoutSlot(TF_CLASS_UNDEFINED);
+			if (slot == -1) {
+				//ClientMsg(player, "[%s] WARNING: failed to determine this item's loadout slot for the current player class; weird things may occur.\n", cmd_name);
+			} else {
+				//ClientMsg(player, "[%s] WARNING: using best-guess loadout slot #%d (\"%s\"). Not guaranteed to work perfectly for this class.\n", cmd_name, slot, GetLoadoutSlotName(slot));
+			}
+		}
+		
+		if (!no_remove) {
+			if (IsLoadoutSlot_Cosmetic(static_cast<loadout_positions_t>(slot))) {
+				/* equip-region-conflict-based old item removal */
+				
+				unsigned int mask1 = item_view->GetStaticData()->GetEquipRegionMask();
+				
+				for (int i = recipient->GetNumWearables() - 1; i >= 0; --i) {
+					CEconWearable *wearable = recipient->GetWearable(i);
+					if (wearable == nullptr) continue;
+					
+					unsigned int mask2 = wearable->GetAttributeContainer()->GetItem()->GetStaticData()->GetEquipRegionMask();
+					
+					if ((mask1 & mask2) != 0) {
+						//ClientMsg(player, "[%s] Removing conflicting wearable \"%s\". (Equip group info: old %08x, new %08x, overlap %08x)\n",
+							//cmd_name, wearable->GetAttributeContainer()->GetItem()->GetStaticData()->GetName(), mask2, mask1, (mask1 & mask2));
+						recipient->RemoveWearable(wearable);
+					}
+				}
+			} else {
+				/* slot-based old item removal */
+				
+				CEconEntity *old_econ_entity = nullptr;
+				(void)CTFPlayerSharedUtils::GetEconItemViewByLoadoutSlot(recipient, slot, &old_econ_entity);
+				
+				if (old_econ_entity != nullptr) {
+					if (old_econ_entity->IsBaseCombatWeapon()) {
+						auto old_weapon = ToBaseCombatWeapon(old_econ_entity);
+						
+						//ClientMsg(player, "[%s] Removing old weapon \"%s\" from slot #%d (\"%s\").\n", cmd_name, old_weapon->GetAttributeContainer()->GetItem()->GetStaticData()->GetName(), slot, GetLoadoutSlotName(slot));
+						recipient->Weapon_Detach(old_weapon);
+						old_weapon->Remove();
+					} else if (old_econ_entity->IsWearable()) {
+						auto old_wearable = rtti_cast<CEconWearable *>(old_econ_entity);
+						
+						//ClientMsg(player, "[%s] Removing old wearable \"%s\" from slot #%d (\"%s\").\n", cmd_name, old_wearable->GetAttributeContainer()->GetItem()->GetStaticData()->GetName(), slot, GetLoadoutSlotName(slot));
+						recipient->RemoveWearable(old_wearable);
+					} else {
+						//ClientMsg(player, "[%s] Removing old entity \"%s\" from slot #%d (\"%s\").\n", cmd_name, old_econ_entity->GetClassname(), slot, GetLoadoutSlotName(slot));
+
+						old_econ_entity->Remove();
+					}
+				} else {
+				//	Msg("No old entity in slot %d\n", slot);
+				}
+			}
+		}
+		
+		CBaseEntity *ent = recipient->GiveNamedItem(item_view->GetStaticData()->GetItemClass(""), 0, item_view, false);
+		if (ent != nullptr) {
+			auto econ_ent = rtti_cast<CEconEntity *>(ent);
+			if (econ_ent != nullptr) {
+				/* make the model visible for other players */
+				econ_ent->m_bValidatedAttachedEntity = true;
+				
+				/* make any extra wearable models visible for other players */
+				auto weapon = rtti_cast<CTFWeaponBase *>(econ_ent);
+				if (weapon != nullptr) {
+					if (weapon->m_hExtraWearable != nullptr) {
+						Msg("Validating extra wearable #%d on weapon #%d \"%s\"\n", ENTINDEX(weapon->m_hExtraWearable), ENTINDEX(weapon), weapon->GetClassname());
+						weapon->m_hExtraWearable->m_bValidatedAttachedEntity = true;
+					}
+					if (weapon->m_hExtraWearableViewModel != nullptr) {
+						Msg("Validating extra wearable VM #%d on weapon #%d \"%s\"\n", ENTINDEX(weapon->m_hExtraWearableViewModel), ENTINDEX(weapon), weapon->GetClassname());
+						weapon->m_hExtraWearableViewModel->m_bValidatedAttachedEntity = true;
+					}
+				}
+				econ_ent->GiveTo(recipient);
+			} else {
+				//ClientMsg(player, "[%s] Failure: GiveNamedItem returned a non-CEconEntity!\n", cmd_name);
+				return;
+			}
+		} else {
+			//ClientMsg(player, "[%s] Failure: GiveNamedItem returned nullptr!\n", cmd_name);
+			return;
+		}
+		
+		if (!item_view->GetAttributeList().Attributes().IsEmpty()) {
+			size_t attr_name_len_max = 0;
+			for (CEconItemAttribute& attr : item_view->GetAttributeList().Attributes()) {
+				attr_name_len_max = Max(attr_name_len_max, strlen(attr.GetStaticData()->GetName()));
+			}
+			char buf[256];
+			//const char *buf = nullptr;
+			int attr_num = 1;
+			
+			//ClientMsg(player, "[%s] Created item \"%s\" with the following %d attributes:\n", cmd_name, item_view->GetStaticData()->GetName(), item_view->GetAttributeList().Attributes().Count());
+			for (CEconItemAttribute& attr : item_view->GetAttributeList().Attributes()) {
+				CEconItemAttributeDefinition *attr_def = attr.GetStaticData();
+				
+				attr_def->ConvertValueToString(*(attr.GetValuePtr()), buf, sizeof(buf));
+				//CopyStringAttributeValueToCharPointerOutput(attr.GetValuePtr()->m_String, &buf);
+				int pad = ((int)attr_name_len_max - (int)strlen(attr_def->GetName()));
+				
+				//ClientMsg(player, "[%s]   [%2d] \"%s\"%*s \"%s\"\n", cmd_name, attr_num, attr_def->GetName(), pad, "", buf);
+				++attr_num;
+			}
+			//ClientMsg(player, "[%s] And gave it to player \"%s\".\n\n", cmd_name, recipient->GetPlayerName());
+		} else {
+			//ClientMsg(player, "[%s] Created item \"%s\" with 0 attributes and gave it to player \"%s\".\n\n", cmd_name, item_view->GetStaticData()->GetName(), recipient->GetPlayerName());
+		}
+		
+		
+	}
+	
 	void CC_Give_Common(CTFPlayer *player, const CCommand& args, const char *cmd_name, const CSteamID *steamid, bool no_remove)
 	{
 		if (args.ArgC() == 1)
@@ -403,12 +596,54 @@ namespace Mod::Util::Make_Item
 		}
 		state.erase(*steamid);
 	}
+	
+	void Give_OneLine_Silent(CTFPlayer *player, const CCommand& args, const char *cmd_name, const CSteamID *steamid, bool noremove)
+	{
+		state.erase(*steamid);
+
+		//ClientMsg(player, "\n");
+		
+		std::vector<CBasePlayer *> vec;
+
+		
+		if (args.ArgC() > 2) { 
+			GetSMTargets(player, args[1], vec);
+			if (vec.empty())
+				return;
+			
+			Start_Silent(player, args[2], steamid);
+		}
+		else {
+			vec.push_back(player);
+			Start_Silent(player, args[1], steamid);
+		}
+
+
+
+		if (args.ArgC() > 3) {
+			for (int i = 3; i < args.ArgC()-1; i += 2) {
+				AddAttr_Silent(player, args[i], args[i+1]);
+			}
+		}
+		
+		for(CBasePlayer *target : vec) {
+			Give_Common_Silent(player, ToTFPlayer(target), "sig_makeitem", steamid, noremove);
+		}
+		state.erase(*steamid);
+	}
 
 	void CC_Give_OneLine(CTFPlayer *player, const CCommand& args)
 	{
 		const CSteamID *steamid = GetCommandClientSteamID("CC_Give_OneLine", player);
 		if (steamid == nullptr) return;
 		Give_OneLine(player, args, "sig_makeitem", steamid, false);
+	}
+	
+	void CC_Give_OneLine_Silent(CTFPlayer *player, const CCommand& args)
+	{
+		const CSteamID *steamid = GetCommandClientSteamID("CC_Give_OneLine", player);
+		if (steamid == nullptr) return;
+		Give_OneLine_Silent(player, args, "sig_makeitem", steamid, false);
 	}
 	
 	void CC_Give_OneLine_NoRemove(CTFPlayer *player, const CCommand& args)

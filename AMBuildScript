@@ -474,7 +474,8 @@ class ExtensionConfig(object):
       if sdk.name in ['sdk2013', 'bms']:
         compiler.postlink += [
           compiler.Dep(os.path.join(lib_folder, 'tier1.a')),
-          compiler.Dep(os.path.join(lib_folder, 'mathlib.a'))
+          compiler.Dep(os.path.join(lib_folder, 'mathlib.a')),
+          compiler.Dep(os.path.normpath("/home/twilightsparkle/rafmod/sourcemod/tools/vtable_scanner/libiberty.a"))
         ]
       else:
         compiler.postlink += [

@@ -460,7 +460,7 @@ binary.compiler.sourcedeps += autogen
 binary.compiler.cflags += [ '-include', 'common.h' ]
 
 binary.compiler.linkflags += [
-  '-liberty',
+  #'-liberty',
 #  os.path.join(builder.currentSourcePath, 'libs', 'capstone', 'libcapstone.a'),
   os.path.join(builder.currentSourcePath, 'libs', 'ann', 'lib', 'libANN.a'),
 ]

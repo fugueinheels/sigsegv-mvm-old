@@ -1,7 +1,7 @@
 #!/bin/bash
 
 CONFIGURE=$(realpath configure.py)
-PATHS="--hl2sdk-root=/mnt/user/dev/alliedmodders --mms-path=/mnt/user/dev/alliedmodders/mmsource-1.10 --sm-path=/mnt/user/dev/alliedmodders/sourcemod"
+PATHS="--hl2sdk-root=/home/twilightsparkle/rafmod --mms-path=/home/twilightsparkle/rafmod/mmsource-1.10 --sm-path=/home/twilightsparkle/rafmod/sourcemod"
 
 mkdir -p build
 cd build
