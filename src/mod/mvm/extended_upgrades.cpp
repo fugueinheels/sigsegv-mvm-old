@@ -436,7 +436,6 @@ namespace Mod::MvM::Extended_Upgrades
                 }
                 else if (FStrEq(subkey2->GetName(), "OnUpgrade")) {
                     //upgradeinfo->on_upgrade_output = subkey2->GetString();
-                    Msg("Found OnUpgrade");
                     Parse_OnUpgradeOutputs(subkey2, upgradeinfo->on_upgrade_outputs);
                 }
                 else if (FStrEq(subkey2->GetName(), "ForceEnable")) {
@@ -724,8 +723,6 @@ namespace Mod::MvM::Extended_Upgrades
             from_buy_upgrade_free = false;
             //if(upgrade->on_upgrade_output != ""){
             for(const auto& [output, delay] : upgrade->on_upgrade_outputs){
-                Msg("for loop doing");
-                Msg("output: %s", output.c_str());
                 char param_tokenized[2048] = "";
                 V_strncpy(param_tokenized, output.c_str(), sizeof(param_tokenized));
                 if(strcmp(param_tokenized, "") != 0){
