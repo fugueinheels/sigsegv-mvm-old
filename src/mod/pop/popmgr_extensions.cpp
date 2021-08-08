@@ -644,6 +644,7 @@ namespace Mod::Pop::PopMgr_Extensions
 			this->m_bHHHNoControlPointLogic = false;
 			this->m_bMinibossSentrySingleKill = false;
 			this->m_bExtendedUpgradesOnly = false;
+			this->m_bExtendedUpgradesNoUndo = false;
 			this->m_bHHHNonSolidToPlayers = false;
 			
 			this->m_MedievalMode            .Reset();
@@ -830,6 +831,7 @@ namespace Mod::Pop::PopMgr_Extensions
 		bool m_bForceRobotBleed;
 		bool m_bMinibossSentrySingleKill;
 		bool m_bExtendedUpgradesOnly;
+		bool m_bExtendedUpgradesNoUndo;
 		bool m_bHHHNonSolidToPlayers;
 
 		CPopOverride_MedievalMode        m_MedievalMode;
@@ -961,6 +963,10 @@ namespace Mod::Pop::PopMgr_Extensions
 		std::unordered_set<CTFPlayer*> m_PlayersByWaveStart;
 	};
 	PopState state;
+
+	bool ExtendedUpgradesNoUndo(){ // this is very maintainable yes
+		return Mod::Pop::PopMgr_Extensions::state.m_bExtendedUpgradesNoUndo;
+	}
 	
 	bool PlayerUsesRobotModel(CTFPlayer *player)
 	{
@@ -4725,6 +4731,8 @@ namespace Mod::Pop::PopMgr_Extensions
 					state.m_bMinibossSentrySingleKill = subkey->GetBool();
 				} else if (FStrEq(name, "ExtendedUpgradesOnly")) {
 					state.m_bExtendedUpgradesOnly = subkey->GetBool();
+				} else if (FStrEq(name, "ExtendedUpgradesNoUndo")) {
+					state.m_bExtendedUpgradesNoUndo = subkey->GetBool();
 				} else if (FStrEq(name, "HHHNonSolidToPlayers")) {
 					state.m_bHHHNonSolidToPlayers = subkey->GetBool();
 				} else if (FStrEq(name, "ItemReplacement")) {
