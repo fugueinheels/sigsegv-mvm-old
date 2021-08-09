@@ -3007,11 +3007,61 @@ namespace Mod::Attr::Custom_Attributes
 		OnAttributesChange(mgr);
 	}*/
 
+	THINK_FUNC_DECL(AfterUsedCanteen)
+	{
+		reinterpret_cast<CTFPowerupBottle*>(this)->m_bActive = false;
+	}
+
+	DETOUR_DECL_MEMBER(bool, CTFPowerupBottle_Use)
+	{
+		bool ret = DETOUR_MEMBER_CALL(CTFPowerupBottle_Use)();
+		DevMsg("do");
+		if(!ret){
+			CTFPowerupBottle* canteen = reinterpret_cast<CTFPowerupBottle*>(this);
+			int cond = 0;
+			CALL_ATTRIB_HOOK_INT_ON_OTHER(canteen, cond, custom_canteen_cond);
+			DevMsg("cond: %d", cond);
+			if((cond != 0) && !canteen->m_bActive && (canteen->GetNumCharges() > 0) && canteen->AllowedToUse()){	
+				// can't be bothered setting up refunds
+				float duration = 0;
+				CALL_ATTRIB_HOOK_FLOAT_ON_OTHER(canteen, duration, powerup_duration);
+				DevMsg("duration: %f", duration);
+				CTFPlayer* player = ToTFPlayer(canteen->GetOwnerEntity());
+				int extra = 0;
+				if(!player){
+					DevMsg("non null player");
+					CALL_ATTRIB_HOOK_INT_ON_OTHER(player, extra, canteen_specialist);
+					// or stranges
+					player->m_Shared->AddCond((ETFCond)cond, duration + extra, player);
+					CWeaponMedigun* medigun = NULL;
+					CTFPlayer* target = NULL;
+					if(player->IsPlayerClass(TF_CLASS_MEDIC)){
+						medigun = dynamic_cast<CWeaponMedigun*>(player->GetActiveWeapon());
+						if(medigun){
+							target = ToTFPlayer( medigun->GetHealTarget() );
+							if (target){
+								target->m_Shared->AddCond((ETFCond)cond, duration + extra, player);
+							}
+						}
+					}
+
+				}
+				canteen->SetNumCharges(canteen->GetNumCharges() - 1);
+				canteen->m_bActive = true;
+				THINK_FUNC_SET(canteen, AfterUsedCanteen, gpGlobals->curtime + duration + extra);
+				DevMsg("done");
+				ret = true;	
+			}
+		}
+		return ret;
+	}
+
 	class CMod : public IMod, public IModCallbackListener, public IFrameUpdatePostEntityThinkListener
 	{
 	public:
 		CMod() : IMod("Attr:Custom_Attributes")
 		{
+			MOD_ADD_DETOUR_MEMBER(CTFPowerupBottle_Use, "CTFPowerupBottle::Use");
 			MOD_ADD_DETOUR_MEMBER(CTFPlayer_CanAirDash, "CTFPlayer::CanAirDash");
 			MOD_ADD_DETOUR_MEMBER(CWeaponMedigun_AllowedToHealTarget, "CWeaponMedigun::AllowedToHealTarget");
 			MOD_ADD_DETOUR_MEMBER(CWeaponMedigun_HealTargetThink, "CWeaponMedigun::HealTargetThink");

@@ -1890,12 +1890,13 @@
     }
     "4503"
     {
-        "name"  "custom canteen"
-        "attribute_class"   "custom_canteen"
-        "attribute_type"    "string"
+        "name"  "custom canteen cond"
+        "attribute_class"   "custom_canteen_cond"
+        //"attribute_type"    "string"
         "description_string"    ""
         "description_format"    "value_is_additive"
         "hidden"    "1"
         "effect_type"   "positive"
+        "stored_as_integer" "1"
     }
 }
