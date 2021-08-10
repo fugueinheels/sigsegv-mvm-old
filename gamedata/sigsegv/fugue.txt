@@ -10,9 +10,17 @@
                     type "sym"
                     sym "_ZN9CTFPlayer16PlayerRunCommandEP8CUserCmdP11IMoveHelper"
                 }
+                "CTFPlayer::Regenerate" {
+                    type "sym"
+                    sym "_ZN9CTFPlayer10RegenerateEb"
+                }
                 "CTFGameMovement::PreventBunnyJumping" {
                     type "sym"
-                    "sym" "_ZN15CTFGameMovement19PreventBunnyJumpingEv"
+                    sym "_ZN15CTFGameMovement19PreventBunnyJumpingEv"
+                }
+                "CBaseCombatCharacter::SetAmmoCount" {
+                    type "sym"
+                    sym "_ZN20CBaseCombatCharacter12SetAmmoCountEii"
                 }
                 "CTFPowerupBottle::Use" {
                     type "sym"
