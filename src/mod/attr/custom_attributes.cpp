@@ -542,6 +542,26 @@ namespace Mod::Attr::Custom_Attributes
 		return ret;
 	}
 
+	DETOUR_DECL_MEMBER(void, CTFPlayer_PlayerRunCommand, CUserCmd* cmd, IMoveHelper* moveHelper)
+	{
+		CTFPlayer* player = reinterpret_cast<CTFPlayer*>(this);
+		int bunnyhop = 0;
+		CALL_ATTRIB_HOOK_INT_ON_OTHER(player, bunnyhop, can_bhop);
+		if(!bunnyhop){
+			CTFWeaponBase* weapon = player->GetActiveTFWeapon();
+			if(weapon){
+				CALL_ATTRIB_HOOK_INT_ON_OTHER(weapon, bunnyhop, can_bhop);
+			}
+		}
+		if(bunnyhop && player->IsAlive() && (cmd->buttons & 2) /*&& (player->GetFlags() & 1) */ && (player->GetGroundEntity() == nullptr)){
+			// Vector velocity = player->GetAbsVelocity();
+			// velocity.z = 267.0;
+			// player->SetAbsVelocity(velocity);
+			cmd->buttons &= ~2;
+		}
+		DETOUR_MEMBER_CALL(CTFPlayer_PlayerRunCommand)(cmd, moveHelper);
+	}
+
 	struct CustomModelEntry
 	{
 		CHandle<CTFWeaponBase> weapon;
@@ -3061,6 +3081,7 @@ namespace Mod::Attr::Custom_Attributes
 	public:
 		CMod() : IMod("Attr:Custom_Attributes")
 		{
+			MOD_ADD_DETOUR_MEMBER(CTFPlayer_PlayerRunCommand, "CTFPlayer::PlayerRunCommand");
 			MOD_ADD_DETOUR_MEMBER(CTFPowerupBottle_Use, "CTFPowerupBottle::Use");
 			MOD_ADD_DETOUR_MEMBER(CTFPlayer_CanAirDash, "CTFPlayer::CanAirDash");
 			MOD_ADD_DETOUR_MEMBER(CWeaponMedigun_AllowedToHealTarget, "CWeaponMedigun::AllowedToHealTarget");

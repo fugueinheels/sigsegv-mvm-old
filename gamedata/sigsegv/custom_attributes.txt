@@ -1899,4 +1899,13 @@
         "effect_type"   "positive"
         "stored_as_integer" "1"
     }
+    "4504"
+    {
+        "name" "can bhop"
+        "attribute_class" "can_bhop"
+        "description_string" "Can bunnyhop"
+        "description_format" "value_is_addtive"
+        "hidden" "1"
+        "effect_type" "positive"
+    }
 }

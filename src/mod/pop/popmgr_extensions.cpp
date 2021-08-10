@@ -646,6 +646,7 @@ namespace Mod::Pop::PopMgr_Extensions
 			this->m_bExtendedUpgradesOnly = false;
 			this->m_bExtendedUpgradesNoUndo = false;
 			this->m_bHHHNonSolidToPlayers = false;
+			this->m_iBunnyHop = 0;
 			
 			this->m_MedievalMode            .Reset();
 			this->m_SpellsEnabled           .Reset();
@@ -833,6 +834,7 @@ namespace Mod::Pop::PopMgr_Extensions
 		bool m_bExtendedUpgradesOnly;
 		bool m_bExtendedUpgradesNoUndo;
 		bool m_bHHHNonSolidToPlayers;
+		int m_iBunnyHop;
 
 		CPopOverride_MedievalMode        m_MedievalMode;
 		CPopOverride_ConVar<bool>        m_SpellsEnabled;
@@ -3427,6 +3429,22 @@ namespace Mod::Pop::PopMgr_Extensions
 		}
 	}
 
+	DETOUR_DECL_MEMBER(void, CTFPlayer_PlayerRunCommand, CUserCmd* cmd, IMoveHelper* moveHelper)
+	{
+		CTFPlayer* player = reinterpret_cast<CTFPlayer*>(this);
+		if((state.m_iBunnyHop == 1) && player->IsAlive() && (cmd->buttons & 2) /*&& (player->GetFlags() & 1) */ && (player->GetGroundEntity() == nullptr)){
+			cmd->buttons &= ~2;
+		}
+		DETOUR_MEMBER_CALL(CTFPlayer_PlayerRunCommand)(cmd, moveHelper);
+	}
+
+	DETOUR_DECL_MEMBER(void, CTFGameMovement_PreventBunnyJumping)
+	{
+		if(!state.m_iBunnyHop){
+			DETOUR_MEMBER_CALL(CTFGameMovement_PreventBunnyJumping)();
+		}
+	}
+
 	DETOUR_DECL_MEMBER(bool, CTraceFilterObject_ShouldHitEntity, IHandleEntity *pServerEntity, int contentsMask)
 	{
 		if (state.m_bHHHNonSolidToPlayers) {
@@ -4739,6 +4757,8 @@ namespace Mod::Pop::PopMgr_Extensions
 					Parse_ItemReplacement(subkey);
 				} else if (FStrEq(name, "ExtraLoadoutItems")) {
 					Parse_ExtraLoadoutItems(subkey);
+				} else if (FStrEq(name, "BunnyHop")) {
+					state.m_iBunnyHop = subkey->GetInt();
 				// } else if (FStrEq(name, "SprayDecal")) {
 				// 	Parse_SprayDecal(subkey);
 				} else if (FStrEq(name, "PrecacheScriptSound"))  { CBaseEntity::PrecacheScriptSound (subkey->GetString());
@@ -4871,6 +4891,8 @@ namespace Mod::Pop::PopMgr_Extensions
 	public:
 		CMod() : IMod("Pop:PopMgr_Extensions")
 		{
+			MOD_ADD_DETOUR_MEMBER(CTFPlayer_PlayerRunCommand,					 "CTFPlayer::PlayerRunCommand");
+			MOD_ADD_DETOUR_MEMBER(CTFGameMovement_PreventBunnyJumping,			 "CTFGameMovement::PreventBunnyJumping");
 			MOD_ADD_DETOUR_MEMBER(CTFGameRules_PlayerKilled,                     "CTFGameRules::PlayerKilled");
 			MOD_ADD_DETOUR_MEMBER(CTFGameRules_ShouldDropSpellPickup,            "CTFGameRules::ShouldDropSpellPickup");
 			MOD_ADD_DETOUR_MEMBER(CTFGameRules_DropSpellPickup,                  "CTFGameRules::DropSpellPickup");
