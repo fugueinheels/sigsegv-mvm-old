@@ -582,6 +582,18 @@ namespace Mod::Etc::Mapentity_Additions
                     }
                     return true;
                 }
+                else if (stricmp(szInputName, "$RefillAmmo") == 0) {
+                    CTFPlayer* player = ToTFPlayer(ent);
+                    for(int i = 0; i < 7; ++i){
+                        player->SetAmmoCount(player->GetMaxAmmo(i), i);
+                    }
+                    return true;
+                }
+                else if(stricmp(szInputName, "$Regenerate") == 0){
+                    CTFPlayer* player = ToTFPlayer(ent);
+                    player->Regenerate(true);
+                    return true;
+                }
             }
 
             if (stricmp(szInputName, "$FireUserAsActivator1") == 0) {
