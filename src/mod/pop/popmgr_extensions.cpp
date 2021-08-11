@@ -647,6 +647,8 @@ namespace Mod::Pop::PopMgr_Extensions
 			this->m_bExtendedUpgradesNoUndo = false;
 			this->m_bHHHNonSolidToPlayers = false;
 			this->m_iBunnyHop = 0;
+			this->m_iAccelerate = 10;
+			this->m_iAirAccelerate = 10;
 			
 			this->m_MedievalMode            .Reset();
 			this->m_SpellsEnabled           .Reset();
@@ -835,6 +837,8 @@ namespace Mod::Pop::PopMgr_Extensions
 		bool m_bExtendedUpgradesNoUndo;
 		bool m_bHHHNonSolidToPlayers;
 		int m_iBunnyHop;
+		int m_iAccelerate;
+		int m_iAirAccelerate;
 
 		CPopOverride_MedievalMode        m_MedievalMode;
 		CPopOverride_ConVar<bool>        m_SpellsEnabled;
@@ -3432,7 +3436,8 @@ namespace Mod::Pop::PopMgr_Extensions
 	DETOUR_DECL_MEMBER(void, CTFPlayer_PlayerRunCommand, CUserCmd* cmd, IMoveHelper* moveHelper)
 	{
 		CTFPlayer* player = reinterpret_cast<CTFPlayer*>(this);
-		if((state.m_iBunnyHop == 1) && player->IsAlive() && (cmd->buttons & 2) /*&& (player->GetFlags() & 1) */ && (player->GetGroundEntity() == nullptr)){
+		if((state.m_iBunnyHop == 1) && player->IsAlive() && (cmd->buttons & 2) /*&& (player->GetFlags() & 1) */ && 
+				(player->GetGroundEntity() == nullptr) && !player->CanAirDash()){
 			cmd->buttons &= ~2;
 		}
 		DETOUR_MEMBER_CALL(CTFPlayer_PlayerRunCommand)(cmd, moveHelper);
@@ -3444,6 +3449,24 @@ namespace Mod::Pop::PopMgr_Extensions
 			DETOUR_MEMBER_CALL(CTFGameMovement_PreventBunnyJumping)();
 		}
 	}
+
+	DETOUR_DECL_MEMBER(void, CGameMovement_Accelerate, Vector& direction, float speed, float accel)
+	{
+		if(state.m_iAccelerate != -1){
+			DETOUR_MEMBER_CALL(CGameMovement_Accelerate)(direction, speed, state.m_iAccelerate);
+		} else {
+			DETOUR_MEMBER_CALL(CGameMovement_Accelerate)(direction, speed, accel);
+		}
+	}
+
+	DETOUR_DECL_MEMBER(void, CGameMovement_AirAccelerate, Vector& direction, float speed, float accel)
+	{
+		if(state.m_iAirAccelerate != -1){
+			DETOUR_MEMBER_CALL(CGameMovement_AirAccelerate)(direction, speed, state.m_iAirAccelerate);
+		} else {
+			DETOUR_MEMBER_CALL(CGameMovement_AirAccelerate)(direction, speed, accel);
+		}
+	}	
 
 	DETOUR_DECL_MEMBER(bool, CTraceFilterObject_ShouldHitEntity, IHandleEntity *pServerEntity, int contentsMask)
 	{
@@ -4759,6 +4782,10 @@ namespace Mod::Pop::PopMgr_Extensions
 					Parse_ExtraLoadoutItems(subkey);
 				} else if (FStrEq(name, "BunnyHop")) {
 					state.m_iBunnyHop = subkey->GetInt();
+				} else if (FStrEq(name, "Accelerate")) {
+					state.m_iAccelerate = subkey->GetInt();
+				} else if (FStrEq(name, "AirAccelerate")) {
+					state.m_iAirAccelerate = subkey->GetInt();
 				// } else if (FStrEq(name, "SprayDecal")) {
 				// 	Parse_SprayDecal(subkey);
 				} else if (FStrEq(name, "PrecacheScriptSound"))  { CBaseEntity::PrecacheScriptSound (subkey->GetString());
@@ -4893,6 +4920,8 @@ namespace Mod::Pop::PopMgr_Extensions
 		{
 			MOD_ADD_DETOUR_MEMBER(CTFPlayer_PlayerRunCommand,					 "CTFPlayer::PlayerRunCommand");
 			MOD_ADD_DETOUR_MEMBER(CTFGameMovement_PreventBunnyJumping,			 "CTFGameMovement::PreventBunnyJumping");
+			MOD_ADD_DETOUR_MEMBER(CGameMovement_Accelerate, 					 "CGameMovement::Accelerate");
+			MOD_ADD_DETOUR_MEMBER(CGameMovement_AirAccelerate, 					 "CGameMovement::AirAccelerate");
 			MOD_ADD_DETOUR_MEMBER(CTFGameRules_PlayerKilled,                     "CTFGameRules::PlayerKilled");
 			MOD_ADD_DETOUR_MEMBER(CTFGameRules_ShouldDropSpellPickup,            "CTFGameRules::ShouldDropSpellPickup");
 			MOD_ADD_DETOUR_MEMBER(CTFGameRules_DropSpellPickup,                  "CTFGameRules::DropSpellPickup");

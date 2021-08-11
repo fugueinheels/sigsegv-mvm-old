@@ -1614,15 +1614,26 @@ namespace Mod::Attr::Custom_Attributes
 			bool entityme_player = entityme->IsPlayer();
 			bool entityhit_player = entityhit->IsPlayer();
 
-			if (!entityme_player || (!entityhit_player && !entityhit->IsBaseObject()))
+			int not_solid = 0;
+			CALL_ATTRIB_HOOK_INT_ON_OTHER( entityme, not_solid, not_solid_to_players);
+
+			if (!entityme_player || ((not_solid != 2) && !entityhit_player && !entityhit->IsBaseObject()))
 				return true;
+
+			if ((not_solid == 2) && (
+				!strcmp(entityhit->GetClassname(), "obj_sentrygun") ||
+				!strcmp(entityhit->GetClassname(), "obj_dispenser") ||
+				!strcmp(entityhit->GetClassname(), "obj_teleporter")
+			)){
+				return true;		
+			}
 
 			bool me_collide = true;
 			bool hit_collide = true;
 
 			auto entry = should_hit_entity_cache.find(entityme);
 			if (entry == should_hit_entity_cache.end()) {
-				int not_solid = 0;
+				not_solid = 0;
 				CALL_ATTRIB_HOOK_INT_ON_OTHER( entityme, not_solid, not_solid_to_players);
 				me_collide = not_solid == 0;
 				should_hit_entity_cache[entityme] = me_collide;
@@ -1637,7 +1648,7 @@ namespace Mod::Attr::Custom_Attributes
 			if (entityhit_player) {
 				auto entry = should_hit_entity_cache.find(entityhit);
 				if (entry == should_hit_entity_cache.end()) {
-					int not_solid = 0;
+					not_solid = 0;
 					CALL_ATTRIB_HOOK_INT_ON_OTHER( entityhit, not_solid, not_solid_to_players);
 					hit_collide = not_solid == 0;
 					should_hit_entity_cache[entityhit] = hit_collide;

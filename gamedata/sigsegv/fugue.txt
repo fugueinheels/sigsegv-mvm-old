@@ -12,7 +12,15 @@
                 }
                 "CTFGameMovement::PreventBunnyJumping" {
                     type "sym"
-                    "sym" "_ZN15CTFGameMovement19PreventBunnyJumpingEv"
+                    sym "_ZN15CTFGameMovement19PreventBunnyJumpingEv"
+                }
+                "CGameMovement::Accelerate" {
+                    type "sym"
+                    sym "_ZN13CGameMovement10AccelerateER6Vectorff"
+                }
+                "CGameMovement::AirAccelerate" {
+                    type "sym"
+                    sym "_ZN13CGameMovement13AirAccelerateER6Vectorff"
                 }
                 "CTFPowerupBottle::Use" {
                     type "sym"
