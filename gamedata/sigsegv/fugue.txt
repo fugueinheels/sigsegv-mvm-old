@@ -25,6 +25,7 @@
                 "CGameMovement::AirAccelerate" {
                     type "sym"
                     sym "_ZN13CGameMovement13AirAccelerateER6Vectorff"
+                }
                 "CBaseCombatCharacter::SetAmmoCount" {
                     type "sym"
                     sym "_ZN20CBaseCombatCharacter12SetAmmoCountEii"
