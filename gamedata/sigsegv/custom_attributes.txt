@@ -1888,7 +1888,17 @@
         "hidden"	"1"
         "effect_type"	"positive"
     }
+    //Projectile gravity native
     "4503"
+    {
+        "name"	"stomp player time"
+        "attribute_class"	"stomp_player_time"
+        "description_string"	""
+        "description_format"	"value_is_additive"
+        "hidden"	"1"
+        "effect_type"	"positive"
+    }
+    "4504"
     {
         "name"  "custom canteen cond"
         "attribute_class"   "custom_canteen_cond"
@@ -1899,7 +1909,7 @@
         "effect_type"   "positive"
         "stored_as_integer" "1"
     }
-    "4504"
+    "4505"
     {
         "name" "can bhop"
         "attribute_class" "can_bhop"
@@ -1907,5 +1917,4 @@
         "description_format" "value_is_addtive"
         "hidden" "1"
         "effect_type" "positive"
-    }
 }
