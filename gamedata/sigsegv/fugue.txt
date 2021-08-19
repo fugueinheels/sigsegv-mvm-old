@@ -46,6 +46,10 @@
                     type "sym"
                     sym "_ZN16CTFPowerupBottle13SetNumChargesEh"
                 }
+                "CTFGameRules::CanUpgradeWithAttrib" {
+                    type "sym"
+                    sym "_ZN12CTFGameRules20CanUpgradeWithAttribEP9CTFPlayeritP22CMannVsMachineUpgrades"
+                }
             }
         }
     }
