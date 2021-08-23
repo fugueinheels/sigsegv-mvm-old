@@ -396,7 +396,13 @@ namespace Mod::Etc::Mapentity_Additions
                     if (player != nullptr) {
                         CEconEntity *item = nullptr;
                         if (slot != nullptr) {
-                            item = GetEconEntityAtLoadoutSlot(player, atoi(slot));
+                            ForEachTFPlayerEconEntity(player, [&](CEconEntity *entity){
+                                if (entity->GetItem() != nullptr && FStrEq(entity->GetItem()->GetItemDefinition()->GetName(), Value.String())) {
+                                    item = entity;
+                                }
+                            });
+                            if (item == nullptr)
+                                item = GetEconEntityAtLoadoutSlot(player, atoi(slot));
                         }
                         else {
                             item = player->GetActiveTFWeapon();
@@ -426,7 +432,13 @@ namespace Mod::Etc::Mapentity_Additions
                     if (player != nullptr) {
                         CEconEntity *item = nullptr;
                         if (slot != nullptr) {
-                            item = GetEconEntityAtLoadoutSlot(player, atoi(slot));
+                            ForEachTFPlayerEconEntity(player, [&](CEconEntity *entity){
+                                if (entity->GetItem() != nullptr && FStrEq(entity->GetItem()->GetItemDefinition()->GetName(), Value.String())) {
+                                    item = entity;
+                                }
+                            });
+                            if (item == nullptr)
+                                item = GetEconEntityAtLoadoutSlot(player, atoi(slot));
                         }
                         else {
                             item = player->GetActiveTFWeapon();
@@ -463,6 +475,18 @@ namespace Mod::Etc::Mapentity_Additions
                     strcat(funny, attributes); // index attr value attr value attr value etc.
                     haha.Tokenize(funny);
                     Mod::Util::Make_Item::CC_Give_OneLine(player, haha);
+                    return true;
+                }
+                else if (stricmp(szInputName, "$RemoveItem") == 0) {
+                    CTFPlayer *player = ToTFPlayer(ent);
+                    ForEachTFPlayerEconEntity(player, [&](CEconEntity *entity){
+						if (entity->GetItem() != nullptr && FStrEq(entity->GetItem()->GetItemDefinition()->GetName(), Value.String())) {
+							if (entity->MyCombatWeaponPointer() != nullptr) {
+								player->Weapon_Detach(entity->MyCombatWeaponPointer());
+							}
+							entity->Remove();
+						}
+					});
                     return true;
                 }
                 else if (stricmp(szInputName, "$ForceGiveWeaponSilent") == 0) {
